@@ -1,10 +1,8 @@
-﻿using Goobwabber.Patreon.Configuration;
-using Goobwabber.Patreon.Models;
+﻿using Goobwabber.Patreon.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Goobwabber.Patreon.API
@@ -30,16 +28,10 @@ namespace Goobwabber.Patreon.API
         {
             Database.User user = _database.Users.Find(userid);
             if (user is null)
-            {
-                _logger.Error($"User Request Error: {UserNotFoundErrorResponse.Error} {UserNotFoundErrorResponse.ErrorDescription}");
-                return UserNotFoundErrorResponse;
-            }
+                throw new HttpResponseException(400);
 
             if (user.TokenExpiry < DateTime.Now)
-            {
-                _logger.Error($"User Request Error: {UserNotAuthenticatedErrorResponse.Error} {UserNotAuthenticatedErrorResponse.ErrorDescription}");
-                return UserNotAuthenticatedErrorResponse;
-            }
+                throw new HttpResponseException(500);
 
             if (user.LastCheckDate.AddDays(7) > DateTime.Now )
                 return new UserResponse
@@ -62,25 +54,10 @@ namespace Goobwabber.Patreon.API
             };
         }
 
-        public static UserResponse UserNotFoundErrorResponse = new UserResponse
-        {
-            Error = "User not found",
-            ErrorDescription = "User needs to authenticate with Patreon."
-        };
-
-        public static UserResponse UserNotAuthenticatedErrorResponse = new UserResponse
-        {
-            Error = "User not authenticated",
-            ErrorDescription = "User needs to reauthenticate with Patreon."
-        };
-
         public class UserResponse
         {
             public string UserId { get; set; }
             public bool Patron { get; set; }
-
-            public string Error { get; set; }
-            public string ErrorDescription { get; set; }
         }
     }
 }

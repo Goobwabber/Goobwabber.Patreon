@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Goobwabber.Patreon.Filters;
 
 namespace Goobwabber.Patreon
 {
@@ -30,7 +31,9 @@ namespace Goobwabber.Patreon
                                     options.UseSqlite(hostBuilderContext.Configuration.GetConnectionString("SqlConnection"))
                                 )
                                 .AddSingleton<PatreonAPI>()
-                                .AddControllers()
+                                .AddControllers(options =>
+                                    options.Filters.Add(new HttpResponseExceptionFilter())
+                                )
                         )
                         .Configure(applicationBuilder =>
                             applicationBuilder

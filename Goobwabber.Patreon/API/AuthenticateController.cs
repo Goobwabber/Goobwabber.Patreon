@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Goobwabber.Patreon.API
@@ -26,19 +25,16 @@ namespace Goobwabber.Patreon.API
         }
 
         [HttpGet]
-        public async Task<AuthenticationResponse> Get(string code, string state)
+        public async Task Get(string code, string state)
         {
+            if (code is null || state is null)
+                throw new HttpResponseException(400);
+
             var validationResponse = await _patreonAPI.ValidateOAuth(code);
 
             if (validationResponse.error is not null)
             {
-                _logger.Error($"Patreon Validation Error: {validationResponse.error} {validationResponse.error_description}");
-                return new AuthenticationResponse
-                {
-                    Success = false,
-                    Error = validationResponse.error,
-                    ErrorDescription = validationResponse.error_description
-                };
+                throw new HttpResponseException(500);
             }
 
             Database.User user = await _database.Users.FindAsync(state);
@@ -57,18 +53,6 @@ namespace Goobwabber.Patreon.API
             user.TokenExpiry = DateTime.Now.AddSeconds(validationResponse.expires_in);
 
             await _database.SaveChangesAsync();
-
-            return new AuthenticationResponse
-            {
-                Success = true
-            };
-        }
-
-        public class AuthenticationResponse {
-            public bool Success { get; set; }
-
-            public string Error { get; set; }
-            public string ErrorDescription { get; set; }
         }
     }
 }
