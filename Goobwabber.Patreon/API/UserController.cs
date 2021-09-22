@@ -1,4 +1,5 @@
-﻿using Goobwabber.Patreon.Models;
+﻿using Goobwabber.Patreon.Configuration;
+using Goobwabber.Patreon.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
@@ -12,13 +13,16 @@ namespace Goobwabber.Patreon.API
     public class UserController : ControllerBase
     {
         private readonly ILogger _logger = Log.ForContext<UserController>();
+        private readonly AppConfiguration _configuration;
         private readonly PatreonAPI _patreonAPI;
         private readonly Database _database;
 
         public UserController(
+            AppConfiguration configuration,
             PatreonAPI patreonAPI,
             Database database)
         {
+            _configuration = configuration;
             _patreonAPI = patreonAPI;
             _database = database;
         }
@@ -33,7 +37,7 @@ namespace Goobwabber.Patreon.API
             if (user.TokenExpiry < DateTime.Now)
                 throw new HttpResponseException(500);
 
-            if (user.LastCheckDate.AddDays(7) > DateTime.Now )
+            if (user.LastCheckDate.AddSeconds(_configuration.IdentityRefreshTime) > DateTime.Now )
                 return new UserResponse
                 {
                     UserId = user.UserId,
@@ -44,6 +48,8 @@ namespace Goobwabber.Patreon.API
 
             user.Patron = identityResponse.data.relationships.memberships.data.Any() &&
                 identityResponse.data.relationships.memberships.data.First().type == "member";
+
+            user.LastCheckDate = DateTime.Now;
 
             await _database.SaveChangesAsync();
 

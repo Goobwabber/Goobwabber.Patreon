@@ -26,6 +26,7 @@ namespace Goobwabber.Patreon
                         .ConfigureServices((hostBuilderContext, services) =>
                             services
                                 .AddOptions()
+                                .AddConfiguration<AppConfiguration>("App")
                                 .AddConfiguration<PatreonConfiguration>("Patreon")
                                 .AddDbContext<Database>(options =>
                                     options.UseSqlite(hostBuilderContext.Configuration.GetConnectionString("SqlConnection"))
