@@ -1,5 +1,5 @@
 using Goobwabber.Patreon.Configuration;
-using Goobwabber.Patreon.Data;
+using Goobwabber.Patreon.Models;
 using Goobwabber.Patreon.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -26,9 +26,10 @@ namespace Goobwabber.Patreon
                             services
                                 .AddOptions()
                                 .AddConfiguration<PatreonConfiguration>("Patreon")
-                                .AddDbContext<DataContext>(options =>
+                                .AddDbContext<Database>(options =>
                                     options.UseSqlite(hostBuilderContext.Configuration.GetConnectionString("SqlConnection"))
                                 )
+                                .AddSingleton<PatreonAPI>()
                                 .AddControllers()
                         )
                         .Configure(applicationBuilder =>
