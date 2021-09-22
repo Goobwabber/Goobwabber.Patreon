@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 
-namespace Goobwabber.Patreon.Data
+namespace Goobwabber.Patreon.Models
 {
-    public class DataContext : DbContext
+    public class Database : DbContext
     {
-        public DataContext(DbContextOptions<DataContext> options) : base(options)
+        public Database(DbContextOptions<Database> options) : base(options)
         {
             Database.EnsureCreated();
         }

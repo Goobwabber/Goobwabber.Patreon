@@ -1,10 +1,7 @@
-﻿using Goobwabber.Patreon.Configuration;
-using Goobwabber.Patreon.Data;
+﻿using Goobwabber.Patreon.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Goobwabber.Patreon.API
@@ -16,63 +13,46 @@ namespace Goobwabber.Patreon.API
         private const string PatreonAPI = "https://www.patreon.com/api/";
 
         private readonly ILogger _logger = Log.ForContext<AuthenticateController>();
-        private static readonly HttpClient _httpClient = new HttpClient();
-        private readonly PatreonConfiguration _patreonConfiguration;
-        private readonly DataContext _dataContext;
+        private readonly PatreonAPI _patreonAPI;
+        private readonly Database _database;
 
         public AuthenticateController(
-            PatreonConfiguration patreonConfiguration,
-            DataContext dataContext)
+            PatreonAPI patreonAPI,
+            Database database)
         {
-            _patreonConfiguration = patreonConfiguration;
-            _dataContext = dataContext;
+            _patreonAPI = patreonAPI;
+            _database = database;
         }
 
         [HttpGet]
         public async Task Get(string code, string state)
         {
-            var validationRequest = await _httpClient.PostAsync(PatreonAPI + "oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                { "code", code },
-                { "grant_type", "authorization_code" },
-                { "client_id", _patreonConfiguration.ClientId },
-                { "client_secret", _patreonConfiguration.ClientSecret },
-                { "redirect_uri", _patreonConfiguration.RedirectUri }
-            }));
+            if (code is null || state is null)
+                throw new HttpResponseException(400);
 
-            var validationResponse = await validationRequest.Content.ReadAsAsync<ValidationResponse>();
+            var validationResponse = await _patreonAPI.ValidateOAuth(code);
 
             if (validationResponse.error is not null)
-                _logger.Error($"{validationResponse.error}: {validationResponse.error_description}");
+            {
+                throw new HttpResponseException(500);
+            }
 
-            DataContext.User user = await _dataContext.Users.FindAsync(state);
+            Database.User user = await _database.Users.FindAsync(state);
             if (user is null)
             {
-                user = new DataContext.User
+                user = new Database.User
                 {
                     UserId = state
                 };
 
-                _dataContext.Users.Add(user);
+                _database.Users.Add(user);
             }
 
             user.AccessToken = validationResponse.access_token;
             user.RefreshToken = validationResponse.refresh_token;
             user.TokenExpiry = DateTime.Now.AddSeconds(validationResponse.expires_in);
 
-            _ = _dataContext.SaveChangesAsync();
-        }
-
-        public class ValidationResponse
-        {
-            public string access_token { get; set; }
-            public string refresh_token { get; set; }
-            public long expires_in { get; set; }
-            public string scope { get; set; }
-            public string token_type { get; set; }
-
-            public string error { get; set; }
-            public string error_description { get; set; }
+            await _database.SaveChangesAsync();
         }
     }
 }

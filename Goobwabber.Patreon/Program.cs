@@ -1,5 +1,5 @@
 using Goobwabber.Patreon.Configuration;
-using Goobwabber.Patreon.Data;
+using Goobwabber.Patreon.Models;
 using Goobwabber.Patreon.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Goobwabber.Patreon.Filters;
 
 namespace Goobwabber.Patreon
 {
@@ -26,10 +27,13 @@ namespace Goobwabber.Patreon
                             services
                                 .AddOptions()
                                 .AddConfiguration<PatreonConfiguration>("Patreon")
-                                .AddDbContext<DataContext>(options =>
+                                .AddDbContext<Database>(options =>
                                     options.UseSqlite(hostBuilderContext.Configuration.GetConnectionString("SqlConnection"))
                                 )
-                                .AddControllers()
+                                .AddSingleton<PatreonAPI>()
+                                .AddControllers(options =>
+                                    options.Filters.Add(new HttpResponseExceptionFilter())
+                                )
                         )
                         .Configure(applicationBuilder =>
                             applicationBuilder
