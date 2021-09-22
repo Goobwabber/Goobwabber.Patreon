@@ -43,7 +43,7 @@ namespace Goobwabber.Patreon.API
             var identityResponse = await _patreonAPI.GetIdentity(user.AccessToken);
 
             user.Patron = identityResponse.data.relationships.memberships.data.Any() &&
-                identityResponse.data.relationships.memberships.data.First().attributes.patron_status == "active_patron";
+                identityResponse.data.relationships.memberships.data.First().type == "member";
 
             await _database.SaveChangesAsync();
 

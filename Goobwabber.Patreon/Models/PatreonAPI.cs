@@ -48,6 +48,7 @@ namespace Goobwabber.Patreon.Models
 
             _logger.Information($"Received {nameof(IdentityResponse)} ({await identityRequest.Content.ReadAsStringAsync()})");
             identityRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
             return await identityRequest.Content.ReadAsAsync<IdentityResponse>();
         }
 
@@ -55,7 +56,6 @@ namespace Goobwabber.Patreon.Models
         {
             public Data data { get; set; }
             public Links links { get; set; }
-
             public string error { get; set; }
             public string error_description { get; set; }
 
@@ -82,18 +82,8 @@ namespace Goobwabber.Patreon.Models
 
                         public class Data
                         {
-                            public Attributes attributes { get; set; }
-
-                            public class Attributes
-                            {
-                                public string full_name { get; set; }
-                                public bool is_follower { get; set; }
-                                public DateTime last_charge_date { get; set; }
-                                public string last_charge_status { get; set; }
-                                public int lifetime_support_cents { get; set; }
-                                public int currently_entitled_amount_cents { get; set; }
-                                public string patron_status { get; set; }
-                            }
+                            public string id { get; set; }
+                            public string type { get; set; }
                         }
                     }
                 }
